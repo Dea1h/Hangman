@@ -10,16 +10,17 @@ struct data
    int hscore;
    char buffer[256];
    char character;
-   char wordbuffer[256];
+   char wordbuffer[15];
    int rnum;
    int line_number;
    int word_length;
    int lives;
    char ch;
+   int challenge;
    int offset_character[];
 }data;
 void menu();
-int search(int len,char character);
+int search();
 void highscore();
 void hangman_brand();
 void game_logic();
@@ -27,23 +28,26 @@ void hangman_1();
 void hangman_2();
 void hangman_3();
 void hangman_4();
-void line_fetch(int);
-void number_sort();
+void line_fetch();
 void game();
 void rand_offset_characters();
-void printer(int);
+void printer();
 void tutorial();
-//MAIN FUNCTION
-int main(){
+//BACKEND FUNCTION
+void backend()
+{
 	srand(time(NULL));
-	data.line_number =  rand() % 2500;
-	line_fetch(data.line_number);
+	data.line_number = rand() % 1825;
+	line_fetch();
 	strcpy(data.wordbuffer,data.buffer);
 	data.line_number = HLINE;
-	line_fetch(data.line_number);
+	line_fetch();
 	data.lives = LIFE_LIMIT;
 	data.word_length = strlen(data.wordbuffer);
-	rand_offset_characters(); 
+	rand_offset_characters();
+}
+//MAIN FUNCTION
+int main(){ 
 	menu();
 }
 //MAIN MENU FOR THE HANGMAN GAME 
@@ -62,6 +66,7 @@ void menu()
 	switch (a)
 	{
 	case 1:
+	backend();
 	game_logic();
 	goto top;
 	break;
@@ -199,21 +204,27 @@ void tutorial()
 }
 //INITIALIZING ARRAT(offset_characters) WITH RANDOM 1 AND 0
 void rand_offset_characters()
-{
+{int count = 0;
 	for(int i=0;i<data.word_length;i++)
 	{
 		data.offset_character[i] = rand() % 2;
+		if(data.offset_character[i] == 1)
+		{
+			count++;
+			if (count == data.challenge)
+			break;
+		}
 	}
 }
 //FETCHING THE WORD FROM THE EXTERNAL WORDLIST <COMPLETE>
-void line_fetch(int line_number)
+void line_fetch()
 {
 	FILE *file_ptr;
-	file_ptr = fopen("wordlist.txt","r+");
+	file_ptr = fopen("wordlist.txt","r");
 	int present_line = 1;
 	while(fgets(data.buffer,sizeof(data.buffer),file_ptr) != NULL)
 	{
-		if(present_line == line_number)
+		if(present_line == data.line_number)
 		{
 			break;
 		}
@@ -222,37 +233,18 @@ void line_fetch(int line_number)
 
 
 }
-
 //DISPLAYS THE HIGHSCORE OF THE PRIVIOUS RUNS <INCOMPLETE>
 void highscore()
 {
 	system("clear");
 	printf("HIGHSCORE\n");
-	sleep(2);
 	printf("%d",data.hscore);
-}
-
-//SORTS THE ARRAY OF RANDOM CHARACTER INDEXES <INCOMPLETE>
-void number_sort()
-{
-int temp=0;
-for(int i=0;i<data.word_length;i++)
-{
-	for(int j=0;j<data.word_length;j++)
-	{
-       if(data.offset_character[i]<data.offset_character[j])
-       {
-       	temp = data.offset_character[i];
-       	data.offset_character[i] = data.offset_character[j];
-       	data.offset_character[j] = temp;
-       }
-	}
-}
+	sleep(2);
 }
 //PRINTS CHARACTER ARRAY
-void printer(int len)
+void printer()
 {
-	for(int i=0;i<len;i++)
+	for(int i=0;i<data.word_length;i++)
 {
 		if(data.offset_character[i] == 1){
 
@@ -265,24 +257,25 @@ void printer(int len)
 
 }
 //SEARCH A ARRAY FOR A CHARACTER
-int search(int len,char letter)
+int search()
 {
-     for(int i=0;i<len;i++)
-	{	
-	if(data.wordbuffer[i] == letter){
-		return i;
+     for(int i=0;i<data.word_length;i++)
+	{
+		if(data.wordbuffer[i] == data.ch && data.offset_character[i] != 1)
+		{
+			return i;
+			break;
+		}
 	}
-	
-}
-return -1;	
+	return 400;
 }
 //GAME LOGIC FOR THE GAME TO RUN OFF OF <INCOMPLETE>
 void game_logic()
 {
-	system("clear");
-	fflush(stdout);
 	for(int i = 0;i<LIFE_LIMIT;i++)
 	{
+		fflush(stdout);
+		system("clear");
 		if(data.lives == LIFE_LIMIT){
 			hangman_1();
 		}
@@ -303,32 +296,25 @@ void game_logic()
 		}
 		else {
 			hangman_6();
+			printf("GAME OVER");
+			break;
 		}
-		printer(data.word_length);
-		scanf("%c",&data.ch);
-		if (search(data.word_length,data.ch) == -1)
+		printer();
+		data.ch = getchar();
+		if (search() != 400)
 		{
-			data.lives = data.lives - 1;
-			system("clear");
-			printf("WRONG");
-			usleep(500000);
+			printf("\n");
+			printf("RIGHT GUESS");
+			data.offset_character[search()] = 1;
+			sleep(1);
 		}
 		else{
-			data.offset_character[search(data.word_length,data.ch)] = 1;
-			number_sort();
-			system("clear");
+			data.lives--;
+			printf("\n");
 			printf("RIGHT");
-			usleep(500000);
+			sleep(1);
 		}
 
 
 	}
 }
-
-
-
-
-
-
-
-
