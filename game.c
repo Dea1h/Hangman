@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,13 +11,11 @@ struct data
    int hscore;
    char buffer[256];
    char character;
-   char wordbuffer[15];
-   int rnum;
    int line_number;
-   int word_length;
+   size_t word_length;
    int lives;
    char ch;
-   int challenge;
+   char * wordbuffer;
    int offset_character[];
 }data;
 void menu();
@@ -39,9 +38,17 @@ void backend()
 	srand(time(NULL));
 	data.line_number = rand() % 1825;
 	line_fetch();
-	strcpy(data.wordbuffer,data.buffer);
-	data.line_number = HLINE;
-	line_fetch();
+	data.word_length = strcspn(data.buffer,"\n");
+	data.wordbuffer = (char *)malloc(data.word_length + 1);
+	if(data.wordbuffer == NULL)
+	{
+		system("clear");
+		printf("Memory Allocation Failed: BUFFER returned NULL when alocating");
+		free(data.wordbuffer);
+		exit(0);
+	}
+	strncpy(data.wordbuffer,data.buffer,data.word_length);
+	data.wordbuffer[data.word_length] = '\0';
 	data.lives = LIFE_LIMIT;
 	data.word_length = strlen(data.wordbuffer);
 	rand_offset_characters();
@@ -63,10 +70,10 @@ void menu()
 	printf("*********Exit***************\n");
 	printf("\n\n\t\t\t");
 	scanf("%d",&a);
+	system("clear");
 	switch (a)
 	{
 	case 1:
-	backend();
 	game_logic();
 	goto top;
 	break;
@@ -104,26 +111,26 @@ void hangman_brand()
 //DISPLAYS THE FIRST HANGMAN ANIMATION
 void hangman_1()
 {
-    printf("      _______\n");
-    printf("     |/      |\n");
-    printf("     |          \n");
-    printf("     |          \n");
-    printf("     |          \n");
-    printf("     |          \n");
-    printf("     |          \n");
+    printf("      ________   \n");
+    printf("     |/      |   \n");
+    printf("     |           \n");
+    printf("     |           \n");
+    printf("     |           \n");
+    printf("     |           \n");
+    printf("     |           \n");
     printf("     |__________________\n");
 }
 
 //DISPLAYS THE SECOND HANGMAN ANIMATION
 void hangman_2()
 {
-    printf("      ________ \n");
-    printf("     |/      | \n");
-    printf("     |      (_)\n");
-    printf("     |         \n");
-    printf("     |         \n");
-    printf("     |         \n");
-    printf("     |         \n");
+    printf("      ________   \n");
+    printf("     |/      |   \n");
+    printf("     |      (_)  \n");
+    printf("     |           \n");
+    printf("     |           \n");
+    printf("     |           \n");
+    printf("     |           \n");
     printf("     |__________________\n"); 
 }
 
@@ -134,35 +141,35 @@ void hangman_3(){
     printf("     |/      |   \n");
     printf("     |      (_)  \n");
     printf("     |      \\|/ \n");
-    printf("     |          \n");
-    printf("     |          \n");
-    printf("     |          \n");
+    printf("     |           \n");
+    printf("     |           \n");
+    printf("     |           \n");
     printf("     |__________________\n");
 }
 
 //DISPLAYS THE FOURTH HANGMAN ANIMATION
 void hangman_4()
 {
-    printf("      _______   \n");
-    printf("     |/      |  \n");
-    printf("     |      (_) \n");
+    printf("      _______    \n");
+    printf("     |/      |   \n");
+    printf("     |      (_)  \n");
     printf("     |      \\|/ \n");
-    printf("     |       |  \n");
-    printf("     |          \n");
-    printf("     |          \n");
+    printf("     |       |   \n");
+    printf("     |           \n");
+    printf("     |           \n");
     printf("     |__________________\n");
 }
 
 //DISPLAYS THE FIFTH HANGMAN ANIMATION
 void hangman_5()
 {
-    printf("      _______   \n");
-    printf("     |/      |  \n");
-    printf("     |      (_) \n");
+    printf("      _______    \n");
+    printf("     |/      |   \n");
+    printf("     |      (_)  \n");
     printf("     |      \\|/ \n");
-    printf("     |       |  \n");
-    printf("     |      / \\\n");
-    printf("     |          \n");
+    printf("     |       |   \n");
+    printf("     |      / \\ \n");
+    printf("     |           \n");
     printf("     |__________________\n");
 }
 
@@ -211,7 +218,7 @@ void rand_offset_characters()
 		if(data.offset_character[i] == 1)
 		{
 			count++;
-			if (count == data.challenge)
+			if (count == LIFE_LIMIT)
 			break;
 		}
 	}
@@ -248,10 +255,10 @@ void printer()
 {
 		if(data.offset_character[i] == 1){
 
-			printf("%c\t",data.wordbuffer[i]);
+			printf("%c ",data.wordbuffer[i]);
 		}
 		else {
-			printf("_\t");
+			printf("_ ");
 		}
 	}
 
@@ -272,6 +279,7 @@ int search()
 //GAME LOGIC FOR THE GAME TO RUN OFF OF <INCOMPLETE>
 void game_logic()
 {
+	backend();
 	for(int i = 0;i<LIFE_LIMIT;i++)
 	{
 		fflush(stdout);
@@ -294,13 +302,16 @@ void game_logic()
 		else if (data.lives + 5 == LIFE_LIMIT) {
 		        hangman_5();
 		}
-		else {
-			hangman_6();
+		else if (data.lives + 6 == LIFE_LIMIT){
+                        hangman_6();
+			printf("\n\n");
 			printf("GAME OVER");
+			sleep(1);
 			break;
 		}
+		printf("\n\n");
 		printer();
-		data.ch = getchar();
+		scanf("%s",&data.ch);
 		if (search() != 400)
 		{
 			printf("\n");
@@ -311,10 +322,12 @@ void game_logic()
 		else{
 			data.lives--;
 			printf("\n");
-			printf("RIGHT");
+			printf("WRONG GUESS");
 			sleep(1);
 		}
 
 
 	}
+	free(data.wordbuffer);
+
 }
